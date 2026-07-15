@@ -1,0 +1,13 @@
+services:
+  nagios:
+    build:
+      context: .
+    container_name: nagios
+    volumes:
+      - nagios-var:/usr/local/nagios/var
+    restart: unless-stopped
+    ports:
+      - "${FORWARD_PORT:-8080}:80"
+
+volumes:
+  nagios-var:
