@@ -94,12 +94,9 @@ COPY docker/nagios/plugins/ /usr/local/nagios/libexec/custom/
 COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
 
 RUN chmod +x /usr/local/bin/entrypoint.sh \
-    && htpasswd -bc /usr/local/nagios/etc/htpasswd.users nagiosadmin nagiosadmin \
-    && chown root:www-data /usr/local/nagios/etc/htpasswd.users \
     && rm -f /etc/apache2/sites-enabled/nagios.conf \
     && a2ensite nagios \
     && chown -R nagios:nagios /usr/local/nagios/share /usr/local/nagios/sbin \
-    && chown -R nagios:nagios /usr/local/nagios/libexec/custom \
-    && chmod 640 /usr/local/nagios/etc/htpasswd.users
+    && chown -R nagios:nagios /usr/local/nagios/libexec/custom
 
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
