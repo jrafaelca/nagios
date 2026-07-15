@@ -1,7 +1,9 @@
 FROM ubuntu:26.04 AS builder
 
 ARG DEBIAN_FRONTEND=noninteractive
-ARG NAGIOS_VERSION=4.5.9
+ARG NAGIOS_RELEASE=latest
+ARG NAGIOS_RELEASES_API=https://api.github.com/repos/NagiosEnterprises/nagioscore/releases/latest
+ARG NAGIOS_DOWNLOAD_BASE=https://assets.nagios.com/downloads/nagioscore/releases
 
 ENV NAGIOS_HOME=/usr/local/nagios
 
@@ -28,10 +30,20 @@ RUN groupadd -r nagios \
 
 WORKDIR /tmp
 
-RUN curl -fsSL -o nagios.tar.gz "https://assets.nagios.com/downloads/nagioscore/releases/nagios-${NAGIOS_VERSION}.tar.gz" \
-    && tar -xzf nagios.tar.gz \
-    && cd "nagios-${NAGIOS_VERSION}" \
-    && ./configure \
+RUN set -eux; \
+    nagios_tag="${NAGIOS_RELEASE}"; \
+    if [ "${nagios_tag}" = "latest" ]; then \
+        nagios_tag="$(curl -fsSL "${NAGIOS_RELEASES_API}" | sed -n 's/.*"tag_name": *"\([^"]*\)".*/\1/p' | head -n1)"; \
+    fi; \
+    case "${nagios_tag}" in \
+        nagios-*) ;; \
+        v*) nagios_tag="nagios-${nagios_tag#v}" ;; \
+        *) nagios_tag="nagios-${nagios_tag}" ;; \
+    esac; \
+    curl -fsSL -o nagios.tar.gz "${NAGIOS_DOWNLOAD_BASE}/${nagios_tag}.tar.gz"; \
+    tar -xzf nagios.tar.gz; \
+    cd "${nagios_tag}" && \
+    ./configure \
         --with-httpd-conf=/etc/apache2/sites-enabled \
         --with-command-group=nagcmd \
         --prefix="${NAGIOS_HOME}" \
