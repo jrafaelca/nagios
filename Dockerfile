@@ -1,4 +1,4 @@
-FROM ubuntu:24.04 AS builder
+FROM ubuntu:26.04 AS builder
 
 ARG DEBIAN_FRONTEND=noninteractive
 ARG NAGIOS_VERSION=4.5.9
@@ -43,7 +43,7 @@ RUN curl -fsSL -o nagios.tar.gz "https://assets.nagios.com/downloads/nagioscore/
     && make install-config \
     && rm -rf /tmp/nagios*
 
-FROM ubuntu:24.04
+FROM ubuntu:26.04
 
 ARG DEBIAN_FRONTEND=noninteractive
 
@@ -55,7 +55,7 @@ RUN apt-get update \
         apache2-utils \
         ca-certificates \
         libapache2-mod-php \
-        libssl3 \
+        libssl3t64 \
         monitoring-plugins \
         php \
     && rm -rf /var/lib/apt/lists/*
