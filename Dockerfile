@@ -67,8 +67,14 @@ RUN apt-get update \
         apache2-utils \
         ca-certificates \
         libapache2-mod-php \
+        bc \
+        expect \
+        curl \
+        openssh-client \
+        jq \
         libssl3t64 \
         monitoring-plugins \
+        tzdata \
         php \
     && rm -rf /var/lib/apt/lists/*
 
@@ -81,6 +87,9 @@ RUN groupadd -r nagios \
 COPY --from=builder /usr/local/nagios /usr/local/nagios
 
 RUN a2enmod cgi \
+    && a2enmod setenvif \
+    && a2enmod headers \
+    && a2enmod ssl \
     && a2enmod rewrite \
     && echo "ServerName localhost" > /etc/apache2/conf-available/servername.conf \
     && a2enconf servername \
@@ -88,15 +97,14 @@ RUN a2enmod cgi \
 
 COPY docker/apache/nagios.conf /etc/apache2/sites-available/nagios.conf
 COPY docker/nagios/nagios.cfg /usr/local/nagios/etc/nagios.cfg
-COPY docker/nagios/cgi.cfg /usr/local/nagios/etc/cgi.cfg
-COPY docker/nagios/objects/ /usr/local/nagios/etc/objects/
-COPY docker/nagios/plugins/ /usr/local/nagios/libexec/custom/
+COPY docker/nagios/resource.cfg /usr/local/nagios/etc/resource.cfg
+COPY docker/nagios/healthz.cgi /usr/local/nagios/sbin/healthz.cgi
 COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
 
 RUN chmod +x /usr/local/bin/entrypoint.sh \
     && rm -f /etc/apache2/sites-enabled/nagios.conf \
     && a2ensite nagios \
     && chown -R nagios:nagios /usr/local/nagios/share /usr/local/nagios/sbin \
-    && chown -R nagios:nagios /usr/local/nagios/libexec/custom
+    && chmod +x /usr/local/nagios/sbin/healthz.cgi
 
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]

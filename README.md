@@ -1,14 +1,21 @@
 # Nagios Core Docker
 
-This repo now contains a clean Ubuntu-based Docker image for Nagios Core.
-By default, the build resolves the latest Nagios Core release from the official GitHub releases API.
+This repo builds a clean Ubuntu-based Nagios Core image and keeps the private site-specific config outside the image.
+
+## Layout
+
+- `docker/` contains the generic image assets that ship with Nagios.
+- `objects/` is the direct Nagios object mount for the editable base and custom definitions.
+- `plugins/` is the direct mount for private check scripts.
+- `secrets/` is the direct mount for SSH keys and other sensitive files.
+
 
 ## Quick start
 
-For local development, build and run the local Compose file:
+For local development:
 
 ```bash
-docker compose -f compose.local.yaml up -d --build
+docker compose up -d --build
 ```
 
 Then open:
@@ -17,48 +24,70 @@ Then open:
 http://localhost:8080/
 ```
 
-Default credentials:
+There is no baked-in password.
+`NAGIOS_ADMIN_USER` is set to `nagios` in `.env.example`, but you should set
+your own password in `.env` before starting the stack.
 
-- user: `nagiosadmin`
-- password: `nagiosadmin`
+If you use `.env.example`, copy it to `.env` first and change the password
+before starting Nagios.
 
-## Deploy From GHCR
+If Nagios sits behind an ALB or any TLS terminator, set `NAGIOS_FORCE_SSL=true`
+so the container trusts `X-Forwarded-Proto` and upgrades insecure browser
+requests.
 
-Set `NAGIOS_IMAGE` to the published image and run the deploy Compose file:
+Set `TZ` in `.env` if you want Nagios to show timestamps in your local zone,
+for example `UTC`.
 
-```bash
-export NAGIOS_IMAGE=ghcr.io/your-org/nagios-example:latest
-docker compose up -d
+
+
+## Use The Image
+
+The published image is:
+
+```text
+ghcr.io/jrafaelca/nagios:latest
 ```
 
-By default the container is published on host port `8080`.
+Use it from your own Compose file in production. A minimal example:
 
-## What is included
+```yaml
+services:
+  nagios:
+    image: ghcr.io/jrafaelca/nagios:latest
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "8080:80"
+    volumes:
+      - nagios-data:/usr/local/nagios/var
+      - ./objects:/usr/local/nagios/etc/objects
+      - ./plugins:/usr/local/nagios/libexec/plugins
+      - ./secrets:/usr/local/nagios/libexec/secrets
 
-- Ubuntu base image
-- Apache
-- Nagios Core built from source, defaulting to the latest official release
-- Minimal local config for `Service Status Details`
-- Simple localhost host/service checks
-- Extensible `objects/` config tree and `plugins/` folder
-- Persistent runtime volume for `var/`
+volumes:
+  nagios-data:
+```
 
-## How To Extend
+## What lives where
 
-Add your own Nagios object definitions under:
+- Generic runtime wiring ships in the image under `docker/nagios/`
+- The editable starting objects live in `objects/`
+- Custom scripts live in `plugins/`
+- SSH keys and other secrets live in `secrets/`
 
-- `docker/nagios/objects/`
+## Image Env Vars
 
-Put any custom check scripts or helpers under:
+The container reads these environment variables:
 
-- `docker/nagios/plugins/`
+| Variable | Purpose |
+| --- | --- |
+| `NAGIOS_ADMIN_USER` | Basic-auth username for the Nagios web UI and CGI access. |
+| `NAGIOS_ADMIN_PASSWORD` | Basic-auth password for the Nagios web UI and CGI access. |
+| `NAGIOS_FORCE_SSL` | Set to `true` when TLS is terminated upstream so Apache adds HTTPS-aware headers. |
+| `TZ` | Container timezone used by Nagios logs and timestamps. |
 
-The local Compose file only persists runtime data in `var/`; the image bakes in the Nagios config and plugins so other developers can extend the starter image by editing the repo and rebuilding.
+Compose-only variables:
 
-If you need a pinned build for reproducibility, pass `--build-arg NAGIOS_RELEASE=nagios-4.5.13` to `docker build` or `docker compose build`.
-
-## What is excluded for now
-
-- `nagiosgraph`
-- host snapshot configs
-- custom production checks from the remote server
+| Variable | Purpose |
+| --- | --- |
+| `FORWARD_PORT` | Host port published to container port `80` for local development. |

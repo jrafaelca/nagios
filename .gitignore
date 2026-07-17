@@ -16,3 +16,8 @@ docker-compose.override.yml
 compose.override.yml
 compose.override.yaml
 *.log
+
+# Local secrets
+.env
+.env.*
+!.env.example
