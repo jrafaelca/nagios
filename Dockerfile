@@ -96,15 +96,15 @@ RUN a2enmod cgi \
     && rm -f /etc/apache2/sites-enabled/000-default.conf
 
 COPY docker/apache/nagios.conf /etc/apache2/sites-available/nagios.conf
-COPY docker/nagios/nagios.cfg /usr/local/nagios/etc/nagios.cfg
-COPY docker/nagios/resource.cfg /usr/local/nagios/etc/resource.cfg
+COPY etc/ /usr/local/nagios/etc/
+COPY libexec/ /usr/local/nagios/libexec/
 COPY docker/nagios/healthz.cgi /usr/local/nagios/sbin/healthz.cgi
 COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
 
 RUN chmod +x /usr/local/bin/entrypoint.sh \
     && rm -f /etc/apache2/sites-enabled/nagios.conf \
     && a2ensite nagios \
-    && chown -R nagios:nagios /usr/local/nagios/share /usr/local/nagios/sbin \
+    && chown -R nagios:nagios /usr/local/nagios/share /usr/local/nagios/sbin /usr/local/nagios/etc /usr/local/nagios/libexec \
     && chmod +x /usr/local/nagios/sbin/healthz.cgi
 
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
