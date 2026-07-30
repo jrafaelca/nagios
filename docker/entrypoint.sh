@@ -14,14 +14,10 @@ if [[ -f "/usr/share/zoneinfo/${TZ}" ]]; then
 fi
 
 mkdir -p /usr/local/nagios/etc/objects
-mkdir -p /usr/local/nagios/libexec/plugins
-mkdir -p /usr/local/nagios/libexec/secrets
+mkdir -p /usr/local/nagios/libexec
 chmod 2775 /usr/local/nagios/etc/objects
-chmod 2775 /usr/local/nagios/libexec/plugins
-chmod 2770 /usr/local/nagios/libexec/secrets
+chmod 2775 /usr/local/nagios/libexec
 
-: "${NAGIOS_ADMIN_USER:?Set NAGIOS_ADMIN_USER in .env}"
-: "${NAGIOS_ADMIN_PASSWORD:?Set NAGIOS_ADMIN_PASSWORD in .env}"
 : "${NAGIOS_FORCE_SSL:=false}"
 
 cat > /usr/local/nagios/etc/apache-runtime.conf <<EOF
@@ -38,6 +34,7 @@ cat >> /usr/local/nagios/etc/apache-runtime.conf <<EOF
 EOF
 fi
 
+if [[ ! -f /usr/local/nagios/etc/cgi.cfg ]]; then
 cat > /usr/local/nagios/etc/cgi.cfg <<EOF
 main_config_file=/usr/local/nagios/etc/nagios.cfg
 physical_html_path=/usr/local/nagios/share
@@ -46,18 +43,20 @@ show_context_help=0
 use_pending_states=1
 use_authentication=1
 use_ssl_authentication=0
-authorized_for_system_information=${NAGIOS_ADMIN_USER}
-authorized_for_configuration_information=${NAGIOS_ADMIN_USER}
-authorized_for_system_commands=${NAGIOS_ADMIN_USER}
-authorized_for_all_services=${NAGIOS_ADMIN_USER}
-authorized_for_all_hosts=${NAGIOS_ADMIN_USER}
-authorized_for_all_service_commands=${NAGIOS_ADMIN_USER}
-authorized_for_all_host_commands=${NAGIOS_ADMIN_USER}
+authorized_for_system_information=nagiosadmin
+authorized_for_configuration_information=nagiosadmin
+authorized_for_system_commands=nagiosadmin
+authorized_for_all_services=nagiosadmin
+authorized_for_all_hosts=nagiosadmin
+authorized_for_all_service_commands=nagiosadmin
+authorized_for_all_host_commands=nagiosadmin
 EOF
+fi
 
-htpasswd -bc /usr/local/nagios/etc/htpasswd.users "$NAGIOS_ADMIN_USER" "$NAGIOS_ADMIN_PASSWORD"
-chown root:www-data /usr/local/nagios/etc/htpasswd.users
-chmod 640 /usr/local/nagios/etc/htpasswd.users
+if [[ ! -f /usr/local/nagios/etc/htpasswd.users ]]; then
+    echo "Missing /usr/local/nagios/etc/htpasswd.users. Copy the example file and change the password." >&2
+    exit 1
+fi
 
 /usr/local/nagios/bin/nagios -v /usr/local/nagios/etc/nagios.cfg
 /usr/local/nagios/bin/nagios -d /usr/local/nagios/etc/nagios.cfg

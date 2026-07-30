@@ -2,15 +2,10 @@ services:
   nagios:
     build:
       context: .
-    container_name: nagios
     env_file: .env
     ports:
       - "${FORWARD_PORT:-8080}:80"
     volumes:
-      - nagios-data:/usr/local/nagios/var
-      - ./objects:/usr/local/nagios/etc/objects
-      - ./plugins:/usr/local/nagios/libexec/plugins
-      - ./secrets:/usr/local/nagios/libexec/secrets
-
-volumes:
-  nagios-data:
+      - ./etc:/usr/local/nagios/etc
+      - ./libexec:/usr/local/nagios/libexec
+      - ./var:/usr/local/nagios/var
