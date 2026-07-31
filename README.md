@@ -5,8 +5,8 @@ This repo builds a clean Ubuntu-based Nagios Core image and exposes the standard
 ## Layout
 
 - `docker/` contains the generic image assets that ship with Nagios.
-- `etc/` contains the editable Nagios configuration, including `nagios.cfg`, `resource.cfg`, and `objects/`.
-- `libexec/` contains custom check scripts and helper executables.
+- `etc/nagios.cfg` and `etc/objects/` contain the editable Nagios configuration mounted at runtime.
+- Standard plugins are installed in the image under `/usr/lib/nagios/plugins`.
 - `var/` contains Nagios runtime state and logs.
 
 
@@ -24,11 +24,10 @@ Then open:
 http://localhost:8080/
 ```
 
-The web UI credentials live in `etc/htpasswd.users`.
-The example ships with a default `nagiosadmin` user, and you should change the
-password in that file before using it for anything real.
-If you want to add another user later, you will also need to add that user to
-the `authorized_for_*` entries in `cgi.cfg`.
+The image includes a default `nagiosadmin` entry in `htpasswd.users` only as a
+starting point. Set `NAGIOS_HTPASSWD` in `.env` before using the image for
+anything real. If you add another user, include its hashed entry in the same
+variable.
 
 If you use `.env.example`, copy it to `.env` first and adjust the non-auth
 values you need.
@@ -61,27 +60,42 @@ services:
     ports:
       - "8080:80"
     volumes:
-      - ./etc:/usr/local/nagios/etc
-      - ./libexec:/usr/local/nagios/libexec
+      - ./etc/nagios.cfg:/usr/local/nagios/etc/nagios.cfg
+      - ./etc/objects:/usr/local/nagios/etc/objects
       - ./var:/usr/local/nagios/var
 ```
 
 ## What lives where
 
 - Generic runtime wiring ships in the image under `docker/nagios/`
-- The editable starting config lives in `etc/`
-- Custom scripts live in `libexec/`
+- The editable main config lives in `etc/nagios.cfg`
+- Editable object definitions live in `etc/objects/`
+- Standard plugins live in the image under `/usr/lib/nagios/plugins`
 - Runtime state and logs live in `var/`
 
-On first boot the container seeds `cgi.cfg` and `htpasswd.users` under `etc/`
-if they do not exist yet, so the host copy stays visible and editable.
+On first boot the container seeds `cgi.cfg` and uses `htpasswd.users` under
+`etc/` if it exists, so the host copy stays visible and editable.
+You can override the authentication file with the optional `NAGIOS_HTPASSWD`
+environment variable.
 The `cgi.cfg` file is generated with `nagiosadmin` as the authorized user.
 
-To change the password, generate a new line and replace the existing one:
+To change the password, generate a new hash and pass the resulting line
+through the environment:
 
 ```bash
-htpasswd -nbB nagiosadmin 'your-password' > etc/htpasswd.users
+htpasswd -nbB nagiosadmin 'your-password'
 ```
+
+Set only the generated `nagiosadmin:$...` line in `.env`. Escape line breaks
+as `\n` when configuring multiple users:
+
+```dotenv
+NAGIOS_HTPASSWD='nagiosadmin:$2y$...\notheruser:$2y$...'
+```
+
+`NAGIOS_HTPASSWD` must contain hashed entries, never a plaintext password.
+The entrypoint writes the value to the authentication file Apache expects at
+startup.
 
 ## Image Env Vars
 
@@ -89,6 +103,7 @@ The container reads these environment variables:
 
 | Variable | Purpose |
 | --- | --- |
+| `NAGIOS_HTPASSWD` | Optional pre-hashed `htpasswd` entries. Overrides `etc/htpasswd.users`. |
 | `NAGIOS_FORCE_SSL` | Set to `true` when TLS is terminated upstream so Apache adds HTTPS-aware headers. |
 | `TZ` | Container timezone used by Nagios logs and timestamps. |
 
