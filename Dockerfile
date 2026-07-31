@@ -105,6 +105,8 @@ RUN chmod +x /usr/local/bin/entrypoint.sh \
     && rm -f /etc/apache2/sites-enabled/nagios.conf \
     && a2ensite nagios \
     && chown -R nagios:nagios /usr/local/nagios/share /usr/local/nagios/sbin /usr/local/nagios/etc /usr/local/nagios/libexec \
+    && chown nagios:nagcmd /usr/local/nagios/etc/htpasswd.users \
+    && chmod 640 /usr/local/nagios/etc/htpasswd.users \
     && chmod +x /usr/local/nagios/sbin/healthz.cgi
 
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]

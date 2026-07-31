@@ -53,7 +53,14 @@ authorized_for_all_host_commands=nagiosadmin
 EOF
 fi
 
-if [[ ! -f /usr/local/nagios/etc/htpasswd.users ]]; then
+if [[ -n "${NAGIOS_HTPASSWD:-}" ]]; then
+    umask 077
+    printf '%b\n' "$NAGIOS_HTPASSWD" > /usr/local/nagios/etc/htpasswd.users
+    chown nagios:nagcmd /usr/local/nagios/etc/htpasswd.users
+    chmod 640 /usr/local/nagios/etc/htpasswd.users
+fi
+
+if [[ ! -s /usr/local/nagios/etc/htpasswd.users ]]; then
     echo "Missing /usr/local/nagios/etc/htpasswd.users. Copy the example file and change the password." >&2
     exit 1
 fi
