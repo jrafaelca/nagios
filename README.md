@@ -73,10 +73,11 @@ services:
 - Standard plugins live in the image under `/usr/lib/nagios/plugins`
 - Runtime state and logs live in `var/`
 
-On first boot the container seeds `cgi.cfg` and uses `htpasswd.users` under
-`etc/` if it exists, so the host copy stays visible and editable.
-You can override the authentication file with the optional `NAGIOS_HTPASSWD`
-environment variable.
+On first boot the container seeds `cgi.cfg` and writes the value of
+`NAGIOS_HTPASSWD` to the authentication file Apache expects. The example
+`.env.example` contains the default user `nagiosadmin` with the temporary
+password `password`; change this value before using the image for anything
+real.
 The `cgi.cfg` file is generated with `nagiosadmin` as the authorized user.
 
 To change the password, generate a new hash and pass the resulting line
@@ -94,8 +95,7 @@ NAGIOS_HTPASSWD='nagiosadmin:$2y$...\notheruser:$2y$...'
 ```
 
 `NAGIOS_HTPASSWD` must contain hashed entries, never a plaintext password.
-The entrypoint writes the value to the authentication file Apache expects at
-startup.
+The entrypoint writes the value to the authentication file at startup.
 
 ## Image Env Vars
 
