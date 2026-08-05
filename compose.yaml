@@ -7,6 +7,7 @@ services:
       - "${FORWARD_PORT:-8080}:80"
     volumes:
       - ./etc/nagios.cfg:/usr/local/nagios/etc/nagios.cfg
+      - ./etc/cgi.cfg:/usr/local/nagios/etc/cgi.cfg
       - ./etc/objects:/usr/local/nagios/etc/objects
       - ./libexec:/usr/local/nagios/libexec
       - ./var:/usr/local/nagios/var
