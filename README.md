@@ -39,6 +39,24 @@ requests.
 Set `TZ` in `.env` if you want Nagios to show timestamps in your local zone,
 for example `UTC`.
 
+## Email notifications
+
+Set `SMTP_HOST` and `SMTP_FROM` to enable email notifications. SMTP
+authentication uses `SMTP_USER` and a file mounted at `SMTP_PASSWORD_FILE`;
+the password is read at startup and is not written directly to the image or
+Compose file. Configure the SMTP relay according to the requirements of your
+environment.
+
+For local testing, start the bundled Mailpit service:
+
+```bash
+docker compose --profile mailpit up -d --build
+```
+
+Use `SMTP_HOST=mailpit`, `SMTP_PORT=1025`, disable SMTP authentication/TLS,
+and set `SMTP_FROM=nagios@local.test`. Mailpit is available at
+`http://localhost:8025/`.
+
 
 
 ## Use The Image
@@ -106,9 +124,18 @@ The container reads these environment variables:
 | `NAGIOS_HTPASSWD` | Optional pre-hashed `htpasswd` entries. Overrides `etc/htpasswd.users`. |
 | `NAGIOS_FORCE_SSL` | Set to `true` when TLS is terminated upstream so Apache adds HTTPS-aware headers. |
 | `TZ` | Container timezone used by Nagios logs and timestamps. |
+| `SMTP_HOST` | SMTP relay hostname. Empty disables SMTP configuration. |
+| `SMTP_PORT` | SMTP relay port, normally `587`. |
+| `SMTP_AUTH` | `on` or `off`; enables SMTP authentication. |
+| `SMTP_TLS` | `on` or `off`; enables TLS. |
+| `SMTP_STARTTLS` | `on` or `off`; enables STARTTLS. |
+| `SMTP_USER` | SMTP authentication username. |
+| `SMTP_PASSWORD_FILE` | File containing the SMTP password. |
+| `SMTP_FROM` | Sender address used by Nagios notifications. |
 
 Compose-only variables:
 
 | Variable | Purpose |
 | --- | --- |
 | `FORWARD_PORT` | Host port published to container port `80` for local development. |
+| `MAILPIT_UI_PORT` | Host port published to Mailpit's web UI when the `mailpit` profile is enabled. |

@@ -20,6 +20,42 @@ chmod 2775 /usr/local/nagios/libexec
 
 : "${NAGIOS_FORCE_SSL:=false}"
 
+if [[ -n "${SMTP_HOST:-}" ]]; then
+    : "${SMTP_PORT:=587}"
+    : "${SMTP_AUTH:=on}"
+    : "${SMTP_TLS:=on}"
+    : "${SMTP_STARTTLS:=on}"
+    : "${SMTP_FROM:?SMTP_FROM is required when SMTP_HOST is set}"
+
+    if [[ "${SMTP_AUTH}" == "on" ]]; then
+        : "${SMTP_USER:?SMTP_USER is required when SMTP_AUTH=on}"
+        : "${SMTP_PASSWORD_FILE:?SMTP_PASSWORD_FILE is required when SMTP_AUTH=on}"
+        if [[ ! -r "${SMTP_PASSWORD_FILE}" ]]; then
+            echo "SMTP_PASSWORD_FILE is not readable: ${SMTP_PASSWORD_FILE}" >&2
+            exit 1
+        fi
+    fi
+
+    umask 077
+    {
+        printf '%s\n' "defaults"
+        printf '%s\n' "auth           ${SMTP_AUTH}"
+        printf '%s\n' "tls            ${SMTP_TLS}"
+        printf '%s\n' "tls_starttls   ${SMTP_STARTTLS}"
+        printf '%s\n' "tls_trust_file /etc/ssl/certs/ca-certificates.crt"
+        printf '%s\n' "account        default"
+        printf '%s\n' "host           ${SMTP_HOST}"
+        printf '%s\n' "port           ${SMTP_PORT}"
+        printf '%s\n' "from           ${SMTP_FROM}"
+        if [[ "${SMTP_AUTH}" == "on" ]]; then
+            printf '%s\n' "user           ${SMTP_USER}"
+            printf '%s\n' "passwordeval   cat ${SMTP_PASSWORD_FILE}"
+        fi
+    } > /etc/msmtprc
+    chown nagios:nagios /etc/msmtprc
+    chmod 600 /etc/msmtprc
+fi
+
 cat > /usr/local/nagios/etc/apache-runtime.conf <<EOF
 <IfModule mod_setenvif.c>
     SetEnvIfNoCase X-Forwarded-Proto "^https$" HTTPS=on
