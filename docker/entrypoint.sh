@@ -21,35 +21,33 @@ chmod 2775 /usr/local/nagios/libexec
 : "${NAGIOS_FORCE_SSL:=false}"
 
 if [[ -n "${SMTP_HOST:-}" ]]; then
-    : "${SMTP_PORT:=587}"
-    : "${SMTP_AUTH:=on}"
-    : "${SMTP_TLS:=on}"
-    : "${SMTP_STARTTLS:=on}"
-    : "${SMTP_FROM:?SMTP_FROM is required when SMTP_HOST is set}"
+    smtp_port="${SMTP_PORT:-587}"
+    smtp_auth="${SMTP_AUTH:-on}"
+    smtp_tls="${SMTP_TLS:-on}"
+    smtp_starttls="${SMTP_STARTTLS:-on}"
+    smtp_from="${SMTP_FROM:-nagios@localhost}"
+    smtp_user="${SMTP_USER:-}"
+    smtp_password="${SMTP_PASSWORD:-}"
 
-    if [[ "${SMTP_AUTH}" == "on" ]]; then
-        : "${SMTP_USER:?SMTP_USER is required when SMTP_AUTH=on}"
-        : "${SMTP_PASSWORD_FILE:?SMTP_PASSWORD_FILE is required when SMTP_AUTH=on}"
-        if [[ ! -r "${SMTP_PASSWORD_FILE}" ]]; then
-            echo "SMTP_PASSWORD_FILE is not readable: ${SMTP_PASSWORD_FILE}" >&2
-            exit 1
-        fi
+    if [[ "${smtp_auth}" == "on" && ( -z "${smtp_user}" || -z "${smtp_password}" ) ]]; then
+        smtp_auth="off"
     fi
+    export SMTP_FROM="${smtp_from}"
 
     umask 077
     {
         printf '%s\n' "defaults"
-        printf '%s\n' "auth           ${SMTP_AUTH}"
-        printf '%s\n' "tls            ${SMTP_TLS}"
-        printf '%s\n' "tls_starttls   ${SMTP_STARTTLS}"
+        printf '%s\n' "auth           ${smtp_auth}"
+        printf '%s\n' "tls            ${smtp_tls}"
+        printf '%s\n' "tls_starttls   ${smtp_starttls}"
         printf '%s\n' "tls_trust_file /etc/ssl/certs/ca-certificates.crt"
         printf '%s\n' "account        default"
         printf '%s\n' "host           ${SMTP_HOST}"
-        printf '%s\n' "port           ${SMTP_PORT}"
-        printf '%s\n' "from           ${SMTP_FROM}"
-        if [[ "${SMTP_AUTH}" == "on" ]]; then
-            printf '%s\n' "user           ${SMTP_USER}"
-            printf '%s\n' "passwordeval   cat ${SMTP_PASSWORD_FILE}"
+        printf '%s\n' "port           ${smtp_port}"
+        printf '%s\n' "from           ${smtp_from}"
+        if [[ "${smtp_auth}" == "on" ]]; then
+            printf '%s\n' "user           ${smtp_user}"
+            printf '%s\n' "password       ${smtp_password}"
         fi
     } > /etc/msmtprc
     chown nagios:nagios /etc/msmtprc
