@@ -42,10 +42,9 @@ for example `UTC`.
 ## Email notifications
 
 Set `SMTP_HOST` and `SMTP_FROM` to enable email notifications. SMTP
-authentication uses `SMTP_USER` and a file mounted at `SMTP_PASSWORD_FILE`;
-the password is read at startup and is not written directly to the image or
-Compose file. Configure the SMTP relay according to the requirements of your
-environment.
+authentication uses `SMTP_USER` and `SMTP_PASSWORD` when both are provided.
+All SMTP variables are optional; invalid or incomplete SMTP settings do not
+prevent Nagios from starting, but email delivery may fail.
 
 For local testing, start the bundled Mailpit service:
 
@@ -126,11 +125,11 @@ The container reads these environment variables:
 | `TZ` | Container timezone used by Nagios logs and timestamps. |
 | `SMTP_HOST` | SMTP relay hostname. Empty disables SMTP configuration. |
 | `SMTP_PORT` | SMTP relay port, normally `587`. |
-| `SMTP_AUTH` | `on` or `off`; enables SMTP authentication. |
+| `SMTP_AUTH` | `on` or `off`; enables SMTP authentication when credentials are available. |
 | `SMTP_TLS` | `on` or `off`; enables TLS. |
 | `SMTP_STARTTLS` | `on` or `off`; enables STARTTLS. |
 | `SMTP_USER` | SMTP authentication username. |
-| `SMTP_PASSWORD_FILE` | File containing the SMTP password. |
+| `SMTP_PASSWORD` | SMTP authentication password. |
 | `SMTP_FROM` | Sender address used by Nagios notifications. |
 
 Compose-only variables:
