@@ -10,3 +10,17 @@ services:
       - ./etc/objects:/usr/local/nagios/etc/objects
       - ./libexec:/usr/local/nagios/libexec
       - ./var:/usr/local/nagios/var
+
+  mailpit:
+    image: axllent/mailpit:v1.27.4
+    profiles: [mailpit]
+    restart: unless-stopped
+    ports:
+      - "${MAILPIT_UI_PORT:-8025}:8025"
+    volumes:
+      - mailpit-data:/data
+    environment:
+      MP_DATABASE: /data/mailpit.db
+
+volumes:
+  mailpit-data:

@@ -73,6 +73,9 @@ RUN apt-get update \
         openssh-client \
         jq \
         libssl3t64 \
+        mailutils \
+        msmtp \
+        msmtp-mta \
         monitoring-plugins \
         tzdata \
         php \
