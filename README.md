@@ -82,6 +82,11 @@ services:
       - ./var:/usr/local/nagios/var
 ```
 
+The image exposes a Docker healthcheck against `/healthz`. It only becomes
+healthy after Apache is serving the endpoint and the Nagios process is running;
+use this readiness state in the reverse proxy or deployment platform so new
+containers do not receive traffic during startup.
+
 ## What lives where
 
 - Generic runtime wiring ships in the image under `docker/nagios/`
