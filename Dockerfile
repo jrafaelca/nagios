@@ -70,6 +70,7 @@ RUN apt-get update \
         bc \
         expect \
         curl \
+        libgd3 \
         openssh-client \
         jq \
         libssl3t64 \
@@ -113,3 +114,6 @@ RUN chmod +x /usr/local/bin/entrypoint.sh \
     && chmod +x /usr/local/nagios/sbin/healthz.cgi
 
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=90s --retries=3 \
+    CMD curl --fail --silent --show-error http://127.0.0.1/healthz >/dev/null || exit 1
