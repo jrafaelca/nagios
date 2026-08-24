@@ -100,6 +100,23 @@ if [[ ! -s /usr/local/nagios/etc/htpasswd.users ]]; then
 fi
 
 /usr/local/nagios/bin/nagios -v /usr/local/nagios/etc/nagios.cfg
-/usr/local/nagios/bin/nagios -d /usr/local/nagios/etc/nagios.cfg
+/usr/local/nagios/bin/nagios -d /usr/local/nagios/etc/nagios.cfg &
+nagios_pid=$!
 
-exec apache2ctl -D FOREGROUND
+apache2ctl -D FOREGROUND &
+apache_pid=$!
+
+cleanup() {
+    kill -TERM "$nagios_pid" "$apache_pid" 2>/dev/null || true
+    wait "$nagios_pid" "$apache_pid" 2>/dev/null || true
+}
+
+trap cleanup TERM INT
+
+set +e
+wait -n "$nagios_pid" "$apache_pid"
+status=$?
+set -e
+
+cleanup
+exit "$status"
