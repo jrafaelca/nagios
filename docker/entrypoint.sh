@@ -101,22 +101,15 @@ fi
 
 /usr/local/nagios/bin/nagios -v /usr/local/nagios/etc/nagios.cfg
 /usr/local/nagios/bin/nagios -d /usr/local/nagios/etc/nagios.cfg &
-nagios_pid=$!
+nagios_launcher_pid=$!
 
-apache2ctl -D FOREGROUND &
-apache_pid=$!
+# Nagios may remain in foreground or daemonize depending on the build.
+# In both cases Apache must become the container's main foreground process.
+sleep 1
+if ! pgrep -x nagios >/dev/null 2>&1; then
+    wait "$nagios_launcher_pid" || true
+    echo "Nagios failed to remain running after startup." >&2
+    exit 1
+fi
 
-cleanup() {
-    kill -TERM "$nagios_pid" "$apache_pid" 2>/dev/null || true
-    wait "$nagios_pid" "$apache_pid" 2>/dev/null || true
-}
-
-trap cleanup TERM INT
-
-set +e
-wait -n "$nagios_pid" "$apache_pid"
-status=$?
-set -e
-
-cleanup
-exit "$status"
+exec apache2ctl -D FOREGROUND
